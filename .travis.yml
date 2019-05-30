@@ -1,0 +1,22 @@
+sudo: required
+services:
+  - docker
+  
+before_install:
+  - docker build -t sl10/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true sl10/react-test npm test -- -- coverage
+
+after_success:
+  - docker build -t sl10/multi_container_client ./client
+  - docker build -t sl10/multi_container_nginx ./nginx
+  - docker build -t sl10/multi_container_server ./server
+  - docker build -t sl10/multi_container_worker ./worker
+  # log into docker cli /w one command by using encrypted environment variables in travis CI
+  - echo "$docker_password" | docker login -u "$docker_id" --password-stdin
+  # push images to docker hub
+  - docker push sl10/multi_container_client
+  - docker push sl10/multi_container_nginx
+  - docker push sl10/multi_container_server
+  - docker push sl10/multi_container_worker
